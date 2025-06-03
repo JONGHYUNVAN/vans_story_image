@@ -4,15 +4,8 @@ import { ImageProcessingError } from './errors';
 /**
  * WebP 변환 옵션 인터페이스
  * @interface WebPConversionOptions
- * @property {number} [quality=80] - WebP 이미지 품질 (0-100)
- * @property {number} [width] - 변환할 이미지의 최대 너비 (픽셀)
- * @property {number} [height] - 변환할 이미지의 최대 높이 (픽셀)
  */
-export interface WebPConversionOptions {
-  quality?: number;
-  width?: number;
-  height?: number;
-}
+export interface WebPConversionOptions {}
 
 /**
  * 이미지를 WebP 형식으로 변환합니다.
@@ -38,18 +31,10 @@ export async function convertToWebP(
   options: WebPConversionOptions = {}
 ): Promise<Buffer> {
   try {
-    const { quality = 80, width, height } = options;
+    const quality = 80;
     
     const imageBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(new Uint8Array(buffer));
     let sharpInstance = sharp(imageBuffer);
-
-    // 리사이징이 필요한 경우
-    if (width || height) {
-      sharpInstance = sharpInstance.resize(width, height, {
-        fit: 'inside',
-        withoutEnlargement: true
-      });
-    }
 
     return await sharpInstance
       .webp({ quality })

@@ -59,11 +59,7 @@ export async function POST(request: NextRequest) {
 
     try {
       // 이미지를 WebP로 변환
-      const webpBuffer = await convertToWebP(buffer, {
-        quality: 80,
-        width: 1920,
-        height: 1080
-      });
+      const webpBuffer = await convertToWebP(buffer);
 
       // S3에 업로드할 파일명 생성
       const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.webp`;
