@@ -1,74 +1,208 @@
 # Vans Story API Route
 
 이 프로젝트는 Next.js 기반의 API 서버로, 이미지 업로드 및 AWS S3 저장 기능을 제공합니다.  
-글에서 크기를 정해서 보낸 이미지 파일을 받아 WebP로 변환한 후, AWS S3에 업로드하여 이미지 URL을 반환합니다.
+클라이언트에서 전송한 이미지 파일을 WebP 형식으로 변환한 후, AWS S3에 업로드하여 이미지 URL을 반환합니다.
 
-## 파일 구조
+## 프로젝트 구조
 
-- **app/api/upload/route.ts**  
- – POST /api/upload 엔드포인트 (multipart/form-data로 이미지 파일을 받아 WebP 변환 후 S3에 업로드)  
-- **app/utils/webpConverter.ts**  
- – convertToWebP 함수 (이미지 버퍼를 WebP로 변환)  
- – getImageMetadata 함수 (이미지 메타데이터 추출)  
-- **app/utils/s3Uploader.ts**  
- – uploadToS3 함수 (파일 버퍼를 AWS S3에 업로드)  
-- **app/utils/errors.ts**  
- – ImageProcessingError, S3UploadError, APIError 등 에러 클래스 정의  
-- **package.json, package-lock.json**  
- – npm 의존성 및 스크립트  
-- **tsconfig.json**  
- – TypeScript 설정  
-- **next.config.ts**  
- – Next.js 설정  
-- **next-env.d.ts**  
- – Next.js 타입 선언  
-- **eslint.config.mjs**  
- – ESLint 설정  
-- **public/**  
- – 정적 파일 (예: favicon, 이미지 등)  
-- **styles/**  
- – 스타일 파일 (CSS 등)  
-- **node_modules/**  
- – npm 패키지 (의존성)  
-- **.gitignore, .gitattributes, README.md**  
- – git 설정 및 문서
+```
+vans_story_api_route/
+├── app/
+│   ├── api/
+│   │   └── upload/
+│   │       └── route.ts           # POST /api/upload 엔드포인트
+│   └── utils/
+│       ├── errors.ts              # 커스텀 에러 클래스 정의
+│       ├── s3Uploader.ts          # AWS S3 업로드 유틸리티
+│       └── webpConverter.ts       # WebP 변환 및 메타데이터 추출
+├── docs/                          # TypeDoc 생성 문서
+├── public/                        # 정적 파일
+├── styles/                        # 스타일 파일
+├── eslint.config.mjs              # ESLint 설정
+├── jsdoc.config.json              # JSDoc 설정 (미사용)
+├── next.config.ts                 # Next.js 설정
+├── next-env.d.ts                  # Next.js 타입 선언
+├── package.json                   # npm 의존성 및 스크립트
+├── tsconfig.json                  # TypeScript 설정
+├── typedoc.json                   # TypeDoc 문서화 설정
+└── README.md                      # 프로젝트 문서
+```
+
+## 주요 기능
+
+### 이미지 처리
+- **WebP 변환**: Sharp 라이브러리를 사용하여 이미지를 WebP 형식으로 변환
+- **품질 설정**: 기본 80%, API 업로드 시 85% 품질 사용
+- **크기 옵션**: 원본 크기 유지 또는 사용자 지정 크기로 리사이징
+- **메타데이터 추출**: 이미지의 너비, 높이, 포맷, 색상 공간 정보 추출
+
+### AWS S3 업로드
+- **멀티파트 업로드**: 대용량 파일도 안정적으로 업로드
+- **고유 파일명**: 타임스탬프 기반 중복 방지 파일명 생성
+- **폴더 구조**: `images/` 폴더에 체계적으로 저장
+- **Content-Type 자동 설정**: WebP MIME 타입 자동 적용
+
+### 에러 처리
+- **ImageProcessingError**: 이미지 변환 관련 에러 (26가지 세부 상황)
+- **S3UploadError**: AWS S3 업로드 관련 에러 (9가지 세부 상황)  
+- **ValidationError**: 입력값 검증 관련 에러 (9가지 세부 상황)
 
 ## API 엔드포인트
 
 ### POST /api/upload
 
-- **Content-Type:** multipart/form-data  
-- **Request Body:**  
- – image: (File) 업로드할 이미지 파일 (최대 5MB)  
-- **Response (성공):**  
- – { "success": true, "imageUrl": "https://bucket-name.s3.ap-northeast-2.amazonaws.com/images/1234567890-example.webp" }  
-- **Response (에러):**  
- – 400: { "error": "이미지 파일이 필요합니다." } 또는 { "error": "파일 크기는 5MB를 초과할 수 없습니다." }  
- – 500: { "error": "이미지 업로드 중 에러가 발생했습니다." } (또는 구체적인 에러 메시지)
+이미지 파일을 WebP로 변환하여 S3에 업로드하고 URL을 반환합니다.
 
-## 사용법
+#### 요청
+- **Content-Type**: `multipart/form-data`
+- **Request Body**:
+  - `image`: 업로드할 이미지 파일 (최대 5MB)
+  - 지원 형식: JPEG, PNG, GIF, WebP, TIFF, AVIF
 
-1. 프로젝트를 클론한 후, 의존성을 설치합니다.  
-  npm install  
-2. 환경 변수 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET 등)를 설정합니다.  
-  (예: .env.local 파일에 추가)  
-3. 개발 서버를 실행합니다.  
-  npm run dev  
-4. (예시) curl 또는 Postman 등으로 POST /api/upload에 multipart/form-data로 이미지 파일을 전송하여 테스트합니다.
+#### 응답
 
-## 의존성 및 설치
+**성공 (200)**
+```json
+{
+  "success": true,
+  "imageUrl": "https://bucket-name.s3.ap-northeast-2.amazonaws.com/images/1734567890123-example.webp"
+}
+```
 
-- Node.js (v14 이상)  
-- npm (v6 이상)  
-- Next.js (v12 이상)  
-- TypeScript (v4 이상)  
-- AWS SDK (S3)  
-- sharp (이미지 처리)  
-- ESLint (코드 린팅)  
-- 기타 (package.json 참고)
+**클라이언트 에러 (400)**
+```json
+{
+  "error": "이미지 파일이 필요합니다."
+}
+```
+```json
+{
+  "error": "파일 크기는 5MB를 초과할 수 없습니다."
+}
+```
 
-## 기타 참고 사항
+**서버 에러 (500)**
+```json
+{
+  "error": "이미지 처리 오류: 지원하지 않는 이미지 형식입니다."
+}
+```
+```json
+{
+  "error": "S3 업로드 오류: AWS 인증에 실패했습니다."
+}
+```
 
-- 글에서 크기를 정해서 보낸 이미지 파일은, convertToWebP 함수에서 고정 크기(width, height) 옵션을 제거하여 원본 크기를 유지합니다.  
-- AWS S3 업로드 시, 버킷 및 폴더(기본값: "images")는 환경 변수 또는 옵션으로 설정할 수 있습니다.  
-- 에러 처리 및 로깅은 app/utils/errors.ts에 정의된 에러 클래스를 사용합니다.
+## 환경 변수 설정
+
+프로젝트 루트에 `.env.local` 파일을 생성하고 다음 환경 변수를 설정하세요:
+
+```env
+# AWS S3 설정
+AWS_ACCESS_KEY_ID=your_access_key_id
+AWS_SECRET_ACCESS_KEY=your_secret_access_key
+AWS_REGION=ap-northeast-2
+AWS_S3_BUCKET=your-bucket-name
+
+# Next.js 설정 (선택사항)
+NEXT_PUBLIC_API_URL=http://localhost:3000
+```
+
+## 설치 및 실행
+
+### 1. 의존성 설치
+```bash
+npm install
+```
+
+### 2. 개발 서버 실행
+```bash
+npm run dev
+```
+
+### 3. 프로덕션 빌드
+```bash
+npm run build
+npm start
+```
+
+### 4. 문서 생성
+```bash
+npm run docs
+```
+
+## 주요 의존성
+
+### 프로덕션 의존성
+- **Next.js 15.3.1**: React 기반 풀스택 프레임워크
+- **React 19.0.0**: UI 라이브러리  
+- **Sharp 0.34.1**: 고성능 이미지 처리 라이브러리
+- **AWS SDK 3.803.0**: S3 클라이언트 및 요청 서명
+- **Multer 1.4.5**: 멀티파트 파일 업로드 처리
+- **Next-Connect 1.0.0**: Next.js 미들웨어 연결
+
+### 개발 의존성
+- **TypeScript 5**: 정적 타입 검사
+- **ESLint 9**: 코드 품질 검사
+- **TypeDoc 0.28.5**: API 문서 자동 생성
+- **@types/*** : TypeScript 타입 정의
+
+## 사용 예제
+
+### cURL로 테스트
+```bash
+curl -X POST http://localhost:3000/api/upload \
+  -F "image=@path/to/your/image.jpg" \
+  -H "Content-Type: multipart/form-data"
+```
+
+### JavaScript (Fetch API)
+```javascript
+const formData = new FormData();
+formData.append('image', fileInput.files[0]);
+
+const response = await fetch('/api/upload', {
+  method: 'POST',
+  body: formData
+});
+
+const result = await response.json();
+if (result.success) {
+  console.log('업로드 성공:', result.imageUrl);
+} else {
+  console.error('업로드 실패:', result.error);
+}
+```
+
+## WebP 변환 옵션
+
+### 품질 설정 가이드
+- **90-100%**: 최고 품질 (포트폴리오, 아트워크)
+- **80-90%**: 고품질 (일반 웹사이트 이미지)  
+- **70-80%**: 균형 (블로그, 상품 이미지)
+- **50-70%**: 압축 우선 (썸네일, 아이콘)
+
+### 지원하는 변환 옵션
+- `quality`: 1-100 (기본값: 80)
+- `width`: 출력 너비 (선택사항)
+- `height`: 출력 높이 (선택사항)  
+- `preserveMetadata`: 메타데이터 보존 여부 (기본값: false)
+
+## 에러 처리
+
+### 주요 에러 유형
+1. **ImageProcessingError**: 이미지 변환 실패, 지원하지 않는 형식, 메모리 부족 등
+2. **S3UploadError**: AWS 인증 실패, 네트워크 오류, 권한 부족 등
+3. **ValidationError**: 필수 필드 누락, 파일 크기 초과, 잘못된 형식 등
+
+### 에러 로깅
+모든 에러는 서버 콘솔에 상세히 기록되며, 클라이언트에는 적절한 에러 메시지가 반환됩니다.
+
+## 문서화
+
+TypeDoc을 사용하여 자동 생성된 API 문서는 `docs/` 폴더에서 확인할 수 있습니다.  
+TSDoc 형식의 한글 주석으로 모든 함수와 클래스가 상세히 문서화되어 있습니다.
+
+## 라이선스
+
+이 프로젝트는 MIT 라이선스 하에 제공됩니다.

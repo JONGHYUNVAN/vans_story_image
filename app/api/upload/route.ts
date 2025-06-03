@@ -18,7 +18,7 @@ import { ValidationError, ImageProcessingError, S3UploadError } from '@/app/util
  *
  * ### 주요 기능:
  * - 이미지 파일 검증 (존재 여부, 크기 제한)
- * - 이미지를 WebP 형식으로 변환 (원본 크기 유지, 품질 80%)
+ * - 이미지를 WebP 형식으로 변환 (원본 크기 유지, 품질 85%)
  * - AWS S3에 이미지 업로드
  * - 고유한 파일명 생성 (타임스탬프 + 원본 파일명)
  * - 에러 처리 및 적절한 HTTP 상태 코드 반환
@@ -105,8 +105,10 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer();
 
     try {
-      // 이미지를 WebP로 변환
-      const webpBuffer = await convertToWebP(buffer);
+      // 이미지를 WebP로 변환 (품질 85% - 고품질과 파일 크기의 균형)
+      const webpBuffer = await convertToWebP(buffer, {
+        quality: 85  // S3 업로드용으로 약간 높은 품질 사용
+      });
 
       // S3에 업로드할 파일명 생성
       const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.webp`;

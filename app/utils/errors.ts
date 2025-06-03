@@ -37,6 +37,10 @@
  * - 손상된 이미지 파일 (`CORRUPTED_FILE`)
  * - 메모리 부족 (`OUT_OF_MEMORY`)
  * - Sharp 라이브러리 오류 (`SHARP_ERROR`)
+ * - 이미지 크기 초과 (`IMAGE_TOO_LARGE`)
+ * - 변환 시간 초과 (`CONVERSION_TIMEOUT`)
+ * - 잘못된 이미지 크기 (`INVALID_DIMENSIONS`)
+ * - 메타데이터 읽기 실패 (`METADATA_READ_FAILED`)
  * 
  * @example 지원하지 않는 이미지 형식
  * ```json
@@ -71,6 +75,42 @@
  *   "name": "ImageProcessingError",
  *   "message": "Sharp 라이브러리 오류: Unexpected end of data",
  *   "code": "SHARP_ERROR"
+ * }
+ * ```
+ * 
+ * @example 이미지 크기 초과
+ * ```json
+ * {
+ *   "name": "ImageProcessingError",
+ *   "message": "이미지 크기가 허용 범위를 초과했습니다. (최대: 10000x10000)",
+ *   "code": "IMAGE_TOO_LARGE"
+ * }
+ * ```
+ * 
+ * @example 변환 시간 초과
+ * ```json
+ * {
+ *   "name": "ImageProcessingError",
+ *   "message": "이미지 변환 시간이 초과되었습니다.",
+ *   "code": "CONVERSION_TIMEOUT"
+ * }
+ * ```
+ * 
+ * @example 잘못된 이미지 크기
+ * ```json
+ * {
+ *   "name": "ImageProcessingError",
+ *   "message": "이미지 크기가 유효하지 않습니다.",
+ *   "code": "INVALID_DIMENSIONS"
+ * }
+ * ```
+ * 
+ * @example 메타데이터 읽기 실패
+ * ```json
+ * {
+ *   "name": "ImageProcessingError",
+ *   "message": "이미지 메타데이터를 읽을 수 없습니다.",
+ *   "code": "METADATA_READ_FAILED"
  * }
  * ```
  * 
@@ -119,6 +159,10 @@ export class ImageProcessingError extends Error {
  * - 권한 부족 (`PERMISSION_DENIED`)
  * - 버킷 접근 실패 (`BUCKET_ACCESS_FAILED`)
  * - 환경 변수 누락 (`ENV_MISSING`)
+ * - 할당량 초과 (`QUOTA_EXCEEDED`)
+ * - 업로드 시간 초과 (`UPLOAD_TIMEOUT`)
+ * - 잘못된 버킷명 (`INVALID_BUCKET_NAME`)
+ * - S3 파일 크기 제한 초과 (`FILE_TOO_LARGE_FOR_S3`)
  * 
  * @example AWS 인증 실패
  * ```json
@@ -147,12 +191,57 @@ export class ImageProcessingError extends Error {
  * }
  * ```
  * 
+ * @example 버킷 접근 실패
+ * ```json
+ * {
+ *   "name": "S3UploadError",
+ *   "message": "S3 버킷에 접근할 수 없습니다.",
+ *   "code": "BUCKET_ACCESS_FAILED"
+ * }
+ * ```
+ * 
  * @example 환경 변수 누락
  * ```json
  * {
  *   "name": "S3UploadError",
  *   "message": "환경 변수 누락",
  *   "code": "ENV_MISSING"
+ * }
+ * ```
+ * 
+ * @example 할당량 초과
+ * ```json
+ * {
+ *   "name": "S3UploadError",
+ *   "message": "S3 스토리지 할당량을 초과했습니다.",
+ *   "code": "QUOTA_EXCEEDED"
+ * }
+ * ```
+ * 
+ * @example 업로드 시간 초과
+ * ```json
+ * {
+ *   "name": "S3UploadError",
+ *   "message": "파일 업로드 시간이 초과되었습니다.",
+ *   "code": "UPLOAD_TIMEOUT"
+ * }
+ * ```
+ * 
+ * @example 잘못된 버킷명
+ * ```json
+ * {
+ *   "name": "S3UploadError",
+ *   "message": "유효하지 않은 S3 버킷명입니다.",
+ *   "code": "INVALID_BUCKET_NAME"
+ * }
+ * ```
+ * 
+ * @example S3 파일 크기 제한 초과
+ * ```json
+ * {
+ *   "name": "S3UploadError",
+ *   "message": "파일 크기가 S3 제한을 초과했습니다. (최대: 5TB)",
+ *   "code": "FILE_TOO_LARGE_FOR_S3"
  * }
  * ```
  * 
@@ -199,6 +288,11 @@ export class S3UploadError extends Error {
  * - 잘못된 데이터 형식 (`INVALID_TYPE`)
  * - 유효하지 않은 값 (`INVALID_VALUE`)
  * - 파일 크기 초과 (`FILE_TOO_LARGE`)
+ * - 허용되지 않는 파일 확장자 (`INVALID_FILE_EXTENSION`)
+ * - 파일명 길이 초과 (`FILENAME_TOO_LONG`)
+ * - 빈 파일 (`EMPTY_FILE`)
+ * - 잘못된 Content-Type (`INVALID_CONTENT_TYPE`)
+ * - 파일 개수 초과 (`TOO_MANY_FILES`)
  * 
  * @example 필수 필드 누락
  * ```json
@@ -233,6 +327,51 @@ export class S3UploadError extends Error {
  *   "name": "ValidationError",
  *   "message": "파일 크기가 너무 큽니다.",
  *   "code": "FILE_TOO_LARGE"
+ * }
+ * ```
+ * 
+ * @example 허용되지 않는 파일 확장자
+ * ```json
+ * {
+ *   "name": "ValidationError",
+ *   "message": "허용되지 않는 파일 확장자입니다. (허용: jpg, jpeg, png, webp)",
+ *   "code": "INVALID_FILE_EXTENSION"
+ * }
+ * ```
+ * 
+ * @example 파일명 길이 초과
+ * ```json
+ * {
+ *   "name": "ValidationError",
+ *   "message": "파일명이 너무 깁니다. (최대: 255자)",
+ *   "code": "FILENAME_TOO_LONG"
+ * }
+ * ```
+ * 
+ * @example 빈 파일
+ * ```json
+ * {
+ *   "name": "ValidationError",
+ *   "message": "빈 파일은 업로드할 수 없습니다.",
+ *   "code": "EMPTY_FILE"
+ * }
+ * ```
+ * 
+ * @example 잘못된 Content-Type
+ * ```json
+ * {
+ *   "name": "ValidationError",
+ *   "message": "지원하지 않는 Content-Type입니다.",
+ *   "code": "INVALID_CONTENT_TYPE"
+ * }
+ * ```
+ * 
+ * @example 파일 개수 초과
+ * ```json
+ * {
+ *   "name": "ValidationError",
+ *   "message": "업로드 가능한 파일 개수를 초과했습니다. (최대: 10개)",
+ *   "code": "TOO_MANY_FILES"
  * }
  * ```
  * 
