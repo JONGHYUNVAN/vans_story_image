@@ -1,0 +1,22 @@
+{
+  "entryPoints": ["./app/**/*.ts"],
+  "out": "./docs",
+  "exclude": ["**/*.test.ts", "**/*.spec.ts"],
+  "theme": "default",
+  "name": "Vans Story API Documentation",
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "includeVersion": true,
+  "validation": {
+    "invalidLink": false,
+    "notExported": false
+  },
+  "readme": "README.md",
+  "categorizeByGroup": true,
+  "categoryOrder": ["API", "Utils", "Errors", "*"],
+  "hideGenerator": true,
+  "sort": ["source-order"],
+  "searchInComments": true,
+  "plugin": []
+} 

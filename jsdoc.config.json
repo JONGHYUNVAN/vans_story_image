@@ -1,0 +1,16 @@
+{
+  "source": {
+    "include": ["./app"],
+    "includePattern": "\\.(js|ts)$",
+    "exclude": ["node_modules/", ".git/", "dist/", "build/"]
+  },
+  "opts": {
+    "destination": "./docs/",
+    "recurse": true
+  },
+  "plugins": ["plugins/markdown"],
+  "templates": {
+    "cleverLinks": false,
+    "monospaceLinks": false
+  }
+} 

@@ -1,0 +1,66 @@
+<!DOCTYPE html><html class="default" lang="en" data-base="./"><head><meta charset="utf-8"/><meta http-equiv="x-ua-compatible" content="IE=edge"/><title>Vans Story API Documentation</title><meta name="description" content="Documentation for Vans Story API Documentation"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="assets/style.css"/><link rel="stylesheet" href="assets/highlight.css"/><script defer src="assets/main.js"></script><script async src="assets/icons.js" id="tsd-icons-script"></script><script async src="assets/search.js" id="tsd-search-script"></script><script async src="assets/navigation.js" id="tsd-nav-script"></script></head><body><script>document.documentElement.dataset.theme = localStorage.getItem("tsd-theme") || "os";document.body.style.display="none";setTimeout(() => window.app?app.showPage():document.body.style.removeProperty("display"),500)</script><header class="tsd-page-toolbar"><div class="tsd-toolbar-contents container"><a href="index.html" class="title">Vans Story API Documentation</a><div id="tsd-toolbar-links"></div><button id="tsd-search-trigger" class="tsd-widget" aria-label="Search"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-search"></use></svg></button><dialog id="tsd-search" aria-label="Search"><input role="combobox" id="tsd-search-input" aria-controls="tsd-search-results" aria-autocomplete="list" aria-expanded="true" autocapitalize="off" autocomplete="off" placeholder="Search the docs" maxLength="100"/><ul role="listbox" id="tsd-search-results"></ul><div id="tsd-search-status" aria-live="polite" aria-atomic="true"><div>Preparing search index...</div></div></dialog><a href="#" class="tsd-widget menu" id="tsd-toolbar-menu-trigger" data-toggle="menu" aria-label="Menu"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-menu"></use></svg></a></div></header><div class="container container-main"><div class="col-content"><div class="tsd-page-title"><h1>Vans Story API Documentation</h1></div><div class="tsd-panel tsd-typography"><h1 id="vans-story-api-route" class="tsd-anchor-link">Vans Story API Route<a href="#vans-story-api-route" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h1><p>이 프로젝트는 Next.js 기반의 API 서버로, 이미지 업로드 및 AWS S3 저장 기능을 제공합니다.<br>
+글에서 크기를 정해서 보낸 이미지 파일을 받아 WebP로 변환한 후, AWS S3에 업로드하여 이미지 URL을 반환합니다.</p>
+<h2 id="파일-구조" class="tsd-anchor-link">파일 구조<a href="#파일-구조" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li><strong>app/api/upload/route.ts</strong><br>
+ – POST /api/upload 엔드포인트 (multipart/form-data로 이미지 파일을 받아 WebP 변환 후 S3에 업로드)</li>
+<li><strong>app/utils/webpConverter.ts</strong><br>
+ – convertToWebP 함수 (이미지 버퍼를 WebP로 변환)<br>
+ – getImageMetadata 함수 (이미지 메타데이터 추출)</li>
+<li><strong>app/utils/s3Uploader.ts</strong><br>
+ – uploadToS3 함수 (파일 버퍼를 AWS S3에 업로드)</li>
+<li><strong>app/utils/errors.ts</strong><br>
+ – ImageProcessingError, S3UploadError, APIError 등 에러 클래스 정의</li>
+<li><strong>package.json, package-lock.json</strong><br>
+ – npm 의존성 및 스크립트</li>
+<li><strong>tsconfig.json</strong><br>
+ – TypeScript 설정</li>
+<li><strong>next.config.ts</strong><br>
+ – Next.js 설정</li>
+<li><strong>next-env.d.ts</strong><br>
+ – Next.js 타입 선언</li>
+<li><strong>eslint.config.mjs</strong><br>
+ – ESLint 설정</li>
+<li><strong>public/</strong><br>
+ – 정적 파일 (예: favicon, 이미지 등)</li>
+<li><strong>styles/</strong><br>
+ – 스타일 파일 (CSS 등)</li>
+<li><strong>node_modules/</strong><br>
+ – npm 패키지 (의존성)</li>
+<li><strong>.gitignore, .gitattributes, <a href="http://README.md">README.md</a></strong><br>
+ – git 설정 및 문서</li>
+</ul>
+<h2 id="api-엔드포인트" class="tsd-anchor-link">API 엔드포인트<a href="#api-엔드포인트" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><h3 id="post-apiupload" class="tsd-anchor-link">POST /api/upload<a href="#post-apiupload" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h3><ul>
+<li><strong>Content-Type:</strong> multipart/form-data</li>
+<li><strong>Request Body:</strong><br>
+ – image: (File) 업로드할 이미지 파일 (최대 5MB)</li>
+<li><strong>Response (성공):</strong><br>
+ – { &quot;success&quot;: true, &quot;imageUrl&quot;: &quot;<a href="https://bucket-name.s3.ap-northeast-2.amazonaws.com/images/1234567890-example.webp">https://bucket-name.s3.ap-northeast-2.amazonaws.com/images/1234567890-example.webp</a>&quot; }</li>
+<li><strong>Response (에러):</strong><br>
+ – 400: { &quot;error&quot;: &quot;이미지 파일이 필요합니다.&quot; } 또는 { &quot;error&quot;: &quot;파일 크기는 5MB를 초과할 수 없습니다.&quot; }<br>
+ – 500: { &quot;error&quot;: &quot;이미지 업로드 중 에러가 발생했습니다.&quot; } (또는 구체적인 에러 메시지)</li>
+</ul>
+<h2 id="사용법" class="tsd-anchor-link">사용법<a href="#사용법" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ol>
+<li>프로젝트를 클론한 후, 의존성을 설치합니다.<br>
+  npm install</li>
+<li>환경 변수 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, AWS_S3_BUCKET 등)를 설정합니다.<br>
+  (예: .env.local 파일에 추가)</li>
+<li>개발 서버를 실행합니다.<br>
+  npm run dev</li>
+<li>(예시) curl 또는 Postman 등으로 POST /api/upload에 multipart/form-data로 이미지 파일을 전송하여 테스트합니다.</li>
+</ol>
+<h2 id="의존성-및-설치" class="tsd-anchor-link">의존성 및 설치<a href="#의존성-및-설치" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li>Node.js (v14 이상)</li>
+<li>npm (v6 이상)</li>
+<li>Next.js (v12 이상)</li>
+<li>TypeScript (v4 이상)</li>
+<li>AWS SDK (S3)</li>
+<li>sharp (이미지 처리)</li>
+<li>ESLint (코드 린팅)</li>
+<li>기타 (package.json 참고)</li>
+</ul>
+<h2 id="기타-참고-사항" class="tsd-anchor-link">기타 참고 사항<a href="#기타-참고-사항" aria-label="Permalink" class="tsd-anchor-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><use href="assets/icons.svg#icon-anchor"></use></svg></a></h2><ul>
+<li>글에서 크기를 정해서 보낸 이미지 파일은, convertToWebP 함수에서 고정 크기(width, height) 옵션을 제거하여 원본 크기를 유지합니다.</li>
+<li>AWS S3 업로드 시, 버킷 및 폴더(기본값: &quot;images&quot;)는 환경 변수 또는 옵션으로 설정할 수 있습니다.</li>
+<li>에러 처리 및 로깅은 app/utils/errors.ts에 정의된 에러 클래스를 사용합니다.</li>
+</ul>
+</div></div><div class="col-sidebar"><div class="page-menu"><div class="tsd-navigation settings"><details class="tsd-accordion"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>Settings</h3></summary><div class="tsd-accordion-details"><div class="tsd-filter-visibility"><span class="settings-label">Member Visibility</span><ul id="tsd-filter-options"><li class="tsd-filter-item"><label class="tsd-filter-input"><input type="checkbox" id="tsd-filter-inherited" name="inherited" checked/><svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect class="tsd-checkbox-background" width="30" height="30" x="1" y="1" rx="6" fill="none"></rect><path class="tsd-checkbox-checkmark" d="M8.35422 16.8214L13.2143 21.75L24.6458 10.25" stroke="none" stroke-width="3.5" stroke-linejoin="round" fill="none"></path></svg><span>Inherited</span></label></li></ul></div><div class="tsd-theme-toggle"><label class="settings-label" for="tsd-theme">Theme</label><select id="tsd-theme"><option value="os">OS</option><option value="light">Light</option><option value="dark">Dark</option></select></div></div></details></div><details open class="tsd-accordion tsd-page-navigation"><summary class="tsd-accordion-summary"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><use href="assets/icons.svg#icon-chevronDown"></use></svg><h3>On This Page</h3></summary><div class="tsd-accordion-details"><a href="#vans-story-api-route"><span>Vans <wbr/>Story <wbr/>API <wbr/>Route</span></a><ul><li><a href="#파일-구조"><span>파일 구조</span></a></li><li><a href="#api-엔드포인트"><span>API 엔드포인트</span></a></li><li><ul><li><a href="#post-apiupload"><span>POST /api/upload</span></a></li></ul></li><li><a href="#사용법"><span>사용법</span></a></li><li><a href="#의존성-및-설치"><span>의존성 및 설치</span></a></li><li><a href="#기타-참고-사항"><span>기타 참고 사항</span></a></li></ul></div></details></div><div class="site-menu"><nav class="tsd-navigation"><a href="modules.html">Vans Story API Documentation</a><ul class="tsd-small-nested-navigation" id="tsd-nav-container"><li>Loading...</li></ul></nav></div></div></div><footer></footer><div class="overlay"></div></body></html>
