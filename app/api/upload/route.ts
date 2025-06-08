@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       const originalName = file.name.replace(/\.[^/.]+$/, '');
 
       // S3에 업로드 (metadata에 원본 파일명 포함)
-      const imageUrl = await uploadToS3(webpBuffer, {
+      const fileName = await uploadToS3(webpBuffer, {
         contentType: 'image/webp',
         prefix: 'images/',
         metadata: {
@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
       
       return NextResponse.json({ 
         success: true, 
-        imageUrl 
+        fileName 
       }, { headers: corsHeaders });
 
     } catch (error) {
