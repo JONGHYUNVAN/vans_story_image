@@ -110,24 +110,24 @@ export async function convertToWebP(
     // ArrayBuffer를 Buffer로 변환 (Node.js 환경에서 사용하기 위함)
     const imageBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(new Uint8Array(buffer));
     
-    // Sharp 인스턴스 생성
-    let sharpInstance = sharp(imageBuffer);
+    // Sharp 인스턴스 생성 및 WebP 변환 설정
+    let processor = sharp(imageBuffer).webp({ quality });
 
     // 리사이징 적용 (옵션으로 지정된 경우)
     if (width || height) {
-      sharpInstance = sharpInstance.resize(width, height, {
+      processor = processor.resize(width, height, {
         fit: 'inside',
         withoutEnlargement: true
       });
     }
 
+    // 메타데이터 보존 설정 적용
+    if (preserveMetadata) {
+      processor = processor.withMetadata();
+    }
+
     // WebP 형식으로 변환하고 Buffer로 반환
-    return await sharpInstance
-      .webp({ 
-        quality,
-        // 메타데이터 보존 설정은 Sharp의 withMetadata()로 처리
-      })
-      .toBuffer();
+    return await processor.toBuffer();
   } catch (error) {
     // Sharp 라이브러리나 기타 오류를 ImageProcessingError로 래핑
     throw new ImageProcessingError(

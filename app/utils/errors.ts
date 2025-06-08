@@ -280,7 +280,7 @@ export class S3UploadError extends Error {
  *   "name": "ValidationError",
  *   "message": "파일 크기가 너무 큽니다.",
  *   "code": "FILE_TOO_LARGE"
- * }
+ * }   
  * ```
  * 
  * ### 주요 에러 상황:

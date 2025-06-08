@@ -5,9 +5,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { convertToWebP } from '@/app/utils/webpConverter';
 import { uploadToS3 } from '@/app/utils/s3Uploader';
-import { ValidationError, ImageProcessingError, S3UploadError } from '@/app/utils/errors';
+import { ImageProcessingError, S3UploadError } from '@/app/utils/errors';
 
+// CORS 설정
+const corsHeaders = {
+  'Access-Control-Allow-Origin': 'http://localhost:3000, https://vansdevblog.online',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Max-Age': '86400',
+};
 
+// OPTIONS 요청 처리
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
 
 /**
  * 이미지 업로드 API 엔드포인트
@@ -93,12 +104,18 @@ export async function POST(request: NextRequest) {
     const file = formData.get('image') as File;
 
     if (!file) {
-      throw new ValidationError('이미지 파일이 필요합니다.');
+      return NextResponse.json(
+        { error: '이미지 파일이 필요합니다.' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     // 파일 크기 체크 (5MB)
     if (file.size > 5 * 1024 * 1024) {
-      throw new ValidationError('파일 크기는 5MB를 초과할 수 없습니다.');
+      return NextResponse.json(
+        { error: '파일 크기는 5MB를 초과할 수 없습니다.' },
+        { status: 400, headers: corsHeaders }
+      );
     }
 
     // File을 ArrayBuffer로 변환
@@ -110,41 +127,45 @@ export async function POST(request: NextRequest) {
         quality: 85  // S3 업로드용으로 약간 높은 품질 사용
       });
 
-      // S3에 업로드할 파일명 생성
-      const fileName = `${Date.now()}-${file.name.replace(/\.[^/.]+$/, '')}.webp`;
+      // 원본 파일명에서 확장자 제거
+      const originalName = file.name.replace(/\.[^/.]+$/, '');
 
-      // S3에 업로드
+      // S3에 업로드 (metadata에 원본 파일명 포함)
       const imageUrl = await uploadToS3(webpBuffer, {
         contentType: 'image/webp',
-        prefix: 'images/'
+        prefix: 'images/',
+        metadata: {
+          originalName: originalName,
+          originalType: file.type
+        }
       });
       
       return NextResponse.json({ 
         success: true, 
         imageUrl 
-      });
+      }, { headers: corsHeaders });
+
     } catch (error) {
       if (error instanceof ImageProcessingError) {
-        throw new ValidationError(`이미지 처리 오류: ${error.message}`);
+        return NextResponse.json(
+          { error: `이미지 처리 오류: ${error.message}` },
+          { status: 400, headers: corsHeaders }
+        );
       }
       if (error instanceof S3UploadError) {
-        throw new ValidationError(`S3 업로드 오류: ${error.message}`);
+        return NextResponse.json(
+          { error: `S3 업로드 오류: ${error.message}` },
+          { status: 400, headers: corsHeaders }
+        );
       }
       throw error;
     }
   } catch (error) {
     console.error('이미지 업로드 에러:', error);
     
-    if (error instanceof ValidationError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 400 }
-      );
-    }
-
     return NextResponse.json(
       { error: '이미지 업로드 중 에러가 발생했습니다.' },
-      { status: 500 }
+      { status: 500, headers: corsHeaders }
     );
   }
 } 
