@@ -7,17 +7,33 @@ import { convertToWebP } from '@/app/utils/webpConverter';
 import { uploadToS3 } from '@/app/utils/s3Uploader';
 import { ImageProcessingError, S3UploadError } from '@/app/utils/errors';
 
-// CORS 설정
-const corsHeaders = {
-  'Access-Control-Allow-Origin': 'http://localhost:3000, https://vansdevblog.online',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-  'Access-Control-Max-Age': '86400',
-};
+// 허용된 도메인 목록
+const ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3002',
+  'https://vansdevblog.online'
+];
+
+// CORS 헤더 생성 함수
+function getCorsHeaders(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400',
+  };
+
+  // origin이 허용된 목록에 있으면 해당 origin을 사용
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    headers['Access-Control-Allow-Origin'] = origin;
+  }
+
+  return headers;
+}
 
 // OPTIONS 요청 처리
-export async function OPTIONS() {
-  return NextResponse.json({}, { headers: corsHeaders });
+export async function OPTIONS(request: NextRequest) {
+  return NextResponse.json({}, { headers: getCorsHeaders(request) });
 }
 
 /**
@@ -99,11 +115,30 @@ export async function OPTIONS() {
  * @see {@link S3UploadError} - S3 업로드 에러 클래스
  */
 export async function POST(request: NextRequest) {
+  const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
+  const startTime = Date.now();
+  const corsHeaders = getCorsHeaders(request);
+
+  console.log(`[${requestId}] 업로드 요청 시작 - ${new Date().toISOString()}`);
+  console.log(`[${requestId}] 요청 헤더:`, {
+    'content-type': request.headers.get('content-type'),
+    'content-length': request.headers.get('content-length'),
+    'origin': request.headers.get('origin'),
+    'user-agent': request.headers.get('user-agent')
+  });
+
   try {
     const formData = await request.formData();
     const file = formData.get('image') as File;
 
+    console.log(`[${requestId}] 파일 정보:`, {
+      name: file?.name,
+      type: file?.type,
+      size: file?.size ? `${(file.size / 1024 / 1024).toFixed(2)}MB` : '없음'
+    });
+
     if (!file) {
+      console.log(`[${requestId}] 에러: 이미지 파일 없음`);
       return NextResponse.json(
         { error: '이미지 파일이 필요합니다.' },
         { status: 400, headers: corsHeaders }
@@ -112,6 +147,7 @@ export async function POST(request: NextRequest) {
 
     // 파일 크기 체크 (5MB)
     if (file.size > 5 * 1024 * 1024) {
+      console.log(`[${requestId}] 에러: 파일 크기 초과 (${(file.size / 1024 / 1024).toFixed(2)}MB)`);
       return NextResponse.json(
         { error: '파일 크기는 5MB를 초과할 수 없습니다.' },
         { status: 400, headers: corsHeaders }
@@ -122,14 +158,17 @@ export async function POST(request: NextRequest) {
     const buffer = await file.arrayBuffer();
 
     try {
+      console.log(`[${requestId}] WebP 변환 시작`);
       // 이미지를 WebP로 변환 (품질 85% - 고품질과 파일 크기의 균형)
       const webpBuffer = await convertToWebP(buffer, {
         quality: 85  // S3 업로드용으로 약간 높은 품질 사용
       });
+      console.log(`[${requestId}] WebP 변환 완료 (${(webpBuffer.length / 1024 / 1024).toFixed(2)}MB)`);
 
       // 원본 파일명에서 확장자 제거
       const originalName = file.name.replace(/\.[^/.]+$/, '');
 
+      console.log(`[${requestId}] S3 업로드 시작`);
       // S3에 업로드 (metadata에 원본 파일명 포함)
       const fileName = await uploadToS3(webpBuffer, {
         contentType: 'image/webp',
@@ -139,6 +178,10 @@ export async function POST(request: NextRequest) {
           originalType: file.type
         }
       });
+      console.log(`[${requestId}] S3 업로드 완료: ${fileName}`);
+      
+      const endTime = Date.now();
+      console.log(`[${requestId}] 요청 처리 완료 - 소요시간: ${endTime - startTime}ms`);
       
       return NextResponse.json({ 
         success: true, 
@@ -146,6 +189,7 @@ export async function POST(request: NextRequest) {
       }, { headers: corsHeaders });
 
     } catch (error) {
+      console.error(`[${requestId}] 처리 중 에러 발생:`, error);
       if (error instanceof ImageProcessingError) {
         return NextResponse.json(
           { error: `이미지 처리 오류: ${error.message}` },
@@ -161,7 +205,7 @@ export async function POST(request: NextRequest) {
       throw error;
     }
   } catch (error) {
-    console.error('이미지 업로드 에러:', error);
+    console.error(`[${requestId}] 예상치 못한 에러:`, error);
     
     return NextResponse.json(
       { error: '이미지 업로드 중 에러가 발생했습니다.' },

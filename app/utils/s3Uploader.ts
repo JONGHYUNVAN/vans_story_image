@@ -156,8 +156,8 @@ export async function uploadToS3(
     // S3에 파일 업로드 실행
     await s3Client.send(command);
 
-    // prefix를 제거하고 순수 파일명만 반환
-    return fileName.replace('images/', '');
+    // CloudFront URL 반환
+    return `https://d2hb7sssthofyk.cloudfront.net/${fileName}`;
   } catch (error) {
     // 모든 오류를 S3UploadError로 래핑하여 일관된 에러 처리
     throw new S3UploadError(
