@@ -38,81 +38,100 @@ export async function OPTIONS(request: NextRequest) {
 
 /**
  * 이미지 업로드 API 엔드포인트
- *
- * 1. 클라이언트로부터 multipart/form-data 형식으로 전송된 이미지 파일 수신
- * 2. WebP 형식으로 변환한 후 AWS S3에 업로드
- * 3. 업로드된 파일의 URL을 반환
- *
- * ### 주요 기능:
- * - 이미지 파일 검증 (존재 여부, 크기 제한)
- * - 이미지를 WebP 형식으로 변환 (원본 크기 유지, 품질 85%)
- * - AWS S3에 이미지 업로드
- * - 고유한 파일명 생성 (타임스탬프 + 원본 파일명)
- * - 에러 처리 및 적절한 HTTP 상태 코드 반환
- *
- * ### 처리 과정:
- * 1. FormData에서 'image' 필드를 추출
- * 2. 파일 존재 여부 및 크기 검증 (최대 5MB)
- * 3. File 객체를 ArrayBuffer로 변환
- * 4. convertToWebP()를 사용하여 WebP로 변환
- * 5. 고유한 파일명 생성 (현재시간 + 원본파일명.webp)
- * 6. uploadToS3()를 사용하여 S3에 업로드
- * 7. 성공 시 이미지 URL 반환, 실패 시 에러 응답
- *
- * @param request - Next.js 요청 객체
- *
- * @returns Next.js 응답 객체
- *
- * @throws {ValidationError} 400 - 클라이언트 요청 오류
- *   - 이미지 파일이 없는 경우: "이미지 파일이 필요합니다."
- *   - 파일 크기 초과: "파일 크기는 5MB를 초과할 수 없습니다."
- * @throws {ValidationError} 500 - 서버 내부 오류
- *   - 이미지 처리 오류: "이미지 처리 오류: {상세 메시지}"
- *   - S3 업로드 오류: "S3 업로드 오류: {상세 메시지}"
- *   - 기타 오류: "이미지 업로드 중 에러가 발생했습니다."
- *
- * @example Request
- * ```json
+ * 
+ * 클라이언트로부터 이미지를 받아 WebP로 변환하고 S3에 업로드한 후 CloudFront URL을 반환합니다.
+ * 
+ * ### 처리 과정
+ * 1. multipart/form-data에서 이미지 파일 추출 및 검증
+ *    - 필수 필드 'image' 존재 확인
+ *    - 파일 크기 제한 (5MB) 확인
+ * 2. 이미지를 WebP 형식으로 변환
+ *    - 품질: 85% (고품질과 파일 크기의 균형)
+ *    - 원본 크기 유지
+ * 3. S3에 업로드
+ *    - 고유한 파일명 생성 (타임스탬프 + 랜덤문자열.webp)
+ *    - 메타데이터에 원본 파일명과 타입 저장
+ * 4. CloudFront URL 반환
+ *    - 형식: https://d2hb7sssthofyk.cloudfront.net/images/[파일명]
+ * 
+ * ### 보안
+ * - CORS: 허용된 도메인에서만 접근 가능
+ *   - http://localhost:3000
+ *   - http://localhost:3002
+ *   - https://vansdevblog.online
+ * - 파일 크기 제한: 5MB
+ * - 허용 파일 형식: 이미지 파일 (MIME 타입 검증)
+ * 
+ * @route POST /api/upload
+ * @param {NextRequest} request - multipart/form-data 형식의 요청
+ *   - Content-Type: multipart/form-data
+ *   - 필수 필드: image (이미지 파일)
+ * @returns {Promise<NextResponse>} JSON 응답
+ *   - 성공: { success: true, fileName: string }
+ *   - 실패: { error: string }
+ * 
+ * @example 요청
+ * ```http
  * POST /api/upload
  * Content-Type: multipart/form-data
- *
+ * Origin: https://vansdevblog.online
+ * 
  * ------WebKitFormBoundary7MA4YWxkTrZu0gW
  * Content-Disposition: form-data; name="image"; filename="example.jpg"
  * Content-Type: image/jpeg
- *
+ * 
  * [이미지 바이너리 데이터]
  * ------WebKitFormBoundary7MA4YWxkTrZu0gW--
  * ```
- *
- * @example Response (성공)
+ * 
+ * @example 성공 응답 (200)
  * ```json
  * {
  *   "success": true,
- *   "imageUrl": "https://bucket.s3.ap-northeast-2.amazonaws.com/images/1234567890-example.webp"
+ *   "fileName": "https://d2hb7sssthofyk.cloudfront.net/images/20240315_143022_a1b2c3d4.webp"
  * }
  * ```
- *
- * @example Response (400 Bad Request)
+ * 
+ * @example 에러 응답 (400) - 이미지 파일 누락
  * ```json
  * {
  *   "error": "이미지 파일이 필요합니다."
  * }
  * ```
- *
- * @example Response (500 Internal Server Error)
+ * 
+ * @example 에러 응답 (400) - 파일 크기 초과
+ * ```json
+ * {
+ *   "error": "파일 크기는 5MB를 초과할 수 없습니다."
+ * }
+ * ```
+ * 
+ * @example 에러 응답 (400) - 이미지 처리 실패
  * ```json
  * {
  *   "error": "이미지 처리 오류: 지원하지 않는 이미지 형식입니다."
  * }
  * ```
- *
- * @since 1.0.0
- *
- * @see {@link convertToWebP} - 이미지 WebP 변환 함수
- * @see {@link uploadToS3} - S3 업로드 함수
- * @see {@link ValidationError} - API 에러 클래스
- * @see {@link ImageProcessingError} - 이미지 처리 에러 클래스
- * @see {@link S3UploadError} - S3 업로드 에러 클래스
+ * 
+ * @example 에러 응답 (400) - S3 업로드 실패
+ * ```json
+ * {
+ *   "error": "S3 업로드 오류: 접근 권한이 없습니다."
+ * }
+ * ```
+ * 
+ * @example 에러 응답 (500) - 서버 내부 오류
+ * ```json
+ * {
+ *   "error": "이미지 업로드 중 에러가 발생했습니다."
+ * }
+ * ```
+ * 
+ * @throws {Error} 400 - 클라이언트 요청 오류
+ * @throws {Error} 500 - 서버 내부 오류
+ * 
+ * @see {@link convertToWebP} - 이미지 WebP 변환
+ * @see {@link uploadToS3} - S3 업로드 및 CloudFront URL 생성
  */
 export async function POST(request: NextRequest) {
   const requestId = Date.now().toString(36) + Math.random().toString(36).substring(2);
