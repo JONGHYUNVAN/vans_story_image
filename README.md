@@ -1,4 +1,4 @@
-# Vans Story API Route
+# Vans DevBlog Image API Route
 
 이 프로젝트는 Next.js 기반의 API 서버로, 이미지 업로드 및 AWS S3 저장 기능을 제공합니다.  
 클라이언트에서 전송한 이미지 파일을 WebP 형식으로 변환한 후, AWS S3에 업로드하여 이미지 URL을 반환합니다.
@@ -6,7 +6,7 @@
 ## 프로젝트 구조
 
 ```
-vans_story_api_route/
+vans_devblog_image/
 ├── app/
 │   ├── api/
 │   │   └── upload/
