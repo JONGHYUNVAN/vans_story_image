@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { convertToWebP } from '@/app/utils/webpConverter';
 import { uploadToS3 } from '@/app/utils/s3Uploader';
 import { ImageProcessingError, S3UploadError } from '@/app/utils/errors';
+import { validateApiKey } from '../../utils/auth'
 
 // 허용된 도메인 목록
 const ALLOWED_ORIGINS = [
@@ -19,7 +20,7 @@ function getCorsHeaders(request: NextRequest) {
   const origin = request.headers.get('origin');
   const headers: Record<string, string> = {
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-API-Key',
     'Access-Control-Max-Age': '86400',
   };
 
@@ -55,6 +56,10 @@ export async function OPTIONS(request: NextRequest) {
  *    - 형식: https://d2hb7sssthofyk.cloudfront.net/images/[파일명]
  * 
  * ### 보안
+ * - **API 키 인증**: 모든 요청에 유효한 API 키 필요
+ *   - Authorization 헤더: `Bearer {API_KEY}`
+ *   - X-API-Key 헤더: `{API_KEY}`
+ *   - 쿼리 파라미터: `?api_key={API_KEY}`
  * - CORS: 허용된 도메인에서만 접근 가능
  *   - http://localhost:3000
  *   - http://localhost:3002
@@ -75,6 +80,9 @@ export async function OPTIONS(request: NextRequest) {
  * POST /api/upload
  * Content-Type: multipart/form-data
  * Origin: https://vansdevblog.online
+ * Authorization: Bearer YOUR_API_KEY_HERE
+ * # 또는 X-API-Key: YOUR_API_KEY_HERE
+ * # 또는 쿼리 파라미터: /api/upload?api_key=YOUR_API_KEY_HERE
  * 
  * ------WebKitFormBoundary7MA4YWxkTrZu0gW
  * Content-Disposition: form-data; name="image"; filename="example.jpg"
@@ -89,6 +97,13 @@ export async function OPTIONS(request: NextRequest) {
  * {
  *   "success": true,
  *   "fileName": "https://d2hb7sssthofyk.cloudfront.net/images/20240315_143022_a1b2c3d4.webp"
+ * }
+ * ```
+ * 
+ * @example 에러 응답 (401) - API 키 누락/무효
+ * ```json
+ * {
+ *   "error": "API 키가 필요합니다. Authorization 헤더, X-API-Key 헤더, 또는 api_key 쿼리 파라미터로 제공해주세요."
  * }
  * ```
  * 
@@ -127,6 +142,7 @@ export async function OPTIONS(request: NextRequest) {
  * }
  * ```
  * 
+ * @throws {Error} 401 - API 키 인증 실패
  * @throws {Error} 400 - 클라이언트 요청 오류
  * @throws {Error} 500 - 서버 내부 오류
  * 
@@ -145,6 +161,17 @@ export async function POST(request: NextRequest) {
     'origin': request.headers.get('origin'),
     'user-agent': request.headers.get('user-agent')
   });
+
+  // API 키 검증
+  const authResult = validateApiKey(request);
+  if (!authResult.success) {
+    console.log(`[${requestId}] 인증 실패: ${authResult.error}`);
+    return NextResponse.json(
+      { error: authResult.error },
+      { status: 401, headers: corsHeaders }
+    );
+  }
+  console.log(`[${requestId}] API 키 인증 성공`);
 
   try {
     const formData = await request.formData();
